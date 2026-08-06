@@ -34,7 +34,9 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponseDto> login(@Valid @RequestBody LoginDto loginDto){
+    public ResponseEntity<LoginResponseDto> login(@Valid @RequestBody LoginDto loginDto) {
+        // Both tokens go in the body for M2. The refresh-token cookie is M4's job, and it
+        // carries the refresh token, not the access token.
         return ResponseEntity.ok(authService.login(loginDto));
     }
 }

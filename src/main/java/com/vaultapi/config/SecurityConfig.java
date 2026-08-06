@@ -1,12 +1,15 @@
 package com.vaultapi.config;
 
+import com.vaultapi.auth.JwtFilterChain;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 
 @EnableWebSecurity
@@ -14,16 +17,21 @@ import org.springframework.security.web.SecurityFilterChain;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
+    private final JwtFilterChain jwtFilterChain;
+
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception{
         httpSecurity.authorizeHttpRequests(
                 auth-> auth
                         .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers("/posts/**").authenticated()
                         // denyAll, not authenticated: an endpoint we forget to configure fails closed
                         .anyRequest().denyAll()
                 )
                 .csrf(csrfConfig->csrfConfig.disable())
                 .formLogin(formLogin->formLogin.disable())
+                .sessionManagement(sessionConfig -> sessionConfig.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .addFilterBefore(jwtFilterChain, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class)
                 .httpBasic(httpBasic->httpBasic.disable());
         return httpSecurity.build();
     }
