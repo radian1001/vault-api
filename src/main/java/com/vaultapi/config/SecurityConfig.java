@@ -1,5 +1,6 @@
 package com.vaultapi.config;
 
+import com.vaultapi.auth.JwtAuthEntryPoint;
 import com.vaultapi.auth.JwtFilterChain;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -10,6 +11,7 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 
 @EnableWebSecurity
@@ -18,6 +20,7 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SecurityConfig {
 
     private final JwtFilterChain jwtFilterChain;
+    private final JwtAuthEntryPoint  jwtAuthEntryPoint;
 
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception{
@@ -28,6 +31,7 @@ public class SecurityConfig {
                         // denyAll, not authenticated: an endpoint we forget to configure fails closed
                         .anyRequest().denyAll()
                 )
+                .exceptionHandling(ex -> ex.authenticationEntryPoint(jwtAuthEntryPoint))
                 .csrf(csrfConfig->csrfConfig.disable())
                 .formLogin(formLogin->formLogin.disable())
                 .sessionManagement(sessionConfig -> sessionConfig.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

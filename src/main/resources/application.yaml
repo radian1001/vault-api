@@ -3,9 +3,12 @@ spring:
     name: vault-api
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/vaultapi
+    url: jdbc:postgresql://localhost:5432/postgres
     username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:postgres}
+    # No default on purpose: an unset DB_PASSWORD fails the context load instead of
+    # silently trying a guessed password. Same rule as jwt.secret below.
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
 
   jpa:
     hibernate:
