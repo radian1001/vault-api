@@ -1,8 +1,6 @@
 package com.vaultapi.auth;
 
 import com.vaultapi.entity.UserEntity;
-import com.vaultapi.error.UserAlreadyExistsException;
-import com.vaultapi.error.UserNotFoundException;
 import com.vaultapi.repo.UserRepo;
 import com.vaultapi.services.JwtService;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -12,6 +10,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -85,7 +84,7 @@ public class JwtFilterChain extends OncePerRequestFilter {
          * layer belongs to @RestControllerAdvice, not to this filter.
          */
         try{
-            Integer userId=jwtService.getUserIdFromToken(token);
+            Integer userId=jwtService.getUserIdFromAccessToken(token);
             if(userId!=null && SecurityContextHolder.getContext().getAuthentication()==null) {
                 UserEntity userEntity = userRepo.findById(userId).orElse(null);
 
@@ -107,7 +106,7 @@ public class JwtFilterChain extends OncePerRequestFilter {
         } catch (ExpiredJwtException e) {
             request.setAttribute("jwtError","Access token expired");
             SecurityContextHolder.clearContext();
-        } catch (IllegalArgumentException | JwtException e) {
+        } catch (IllegalArgumentException | JwtException | BadCredentialsException e) {
             request.setAttribute("jwtError", "Invalid access token");
             SecurityContextHolder.clearContext();
         }

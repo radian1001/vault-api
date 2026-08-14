@@ -3,9 +3,11 @@ package com.vaultapi.services;
 import com.vaultapi.dto.LoginDto;
 import com.vaultapi.dto.LoginResponseDto;
 import com.vaultapi.entity.UserEntity;
+import com.vaultapi.repo.UserRepo;
 import jakarta.annotation.Nonnull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
@@ -24,6 +26,7 @@ public class AuthService {
 
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
+    private final UserRepo userRepo;
 
     public LoginResponseDto login(@Nonnull LoginDto loginDto) {
         // authenticate() is the only DB read: it calls loadUserByUsername internally and
@@ -38,4 +41,12 @@ public class AuthService {
     }
 
 
+
+    public LoginResponseDto refreshToken(String refreshToken) {
+        // Implementation for refreshing token
+        Integer userId= jwtService.getUserIdFromRefreshToken(refreshToken);
+        UserEntity userEntity=userRepo.findById(userId).orElseThrow(() -> new AuthenticationServiceException("User not found"));
+        String accessToken = jwtService.generateAccessToken(userEntity);
+        return new LoginResponseDto(userEntity.getId(), accessToken, refreshToken);
+    }
 }
