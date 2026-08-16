@@ -3,6 +3,7 @@ package com.vaultapi;
 import com.vaultapi.dto.enums.Plans;
 import com.vaultapi.dto.enums.Roles;
 import com.vaultapi.entity.UserEntity;
+import com.vaultapi.repo.SessionRepo;
 import com.vaultapi.repo.UserRepo;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -53,6 +54,11 @@ class M3ErrorHandlingTest {
 
     @MockitoBean
     private UserRepo userRepo;
+
+    // JPA autoconfiguration is excluded above, so every repository this context needs
+    // has to be mocked by hand. M5 added SessionRepo behind AuthService.
+    @MockitoBean
+    private SessionRepo sessionRepo;
 
     private UserEntity user;
 
