@@ -61,11 +61,17 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<LoginResponseDto> refresh(HttpServletRequest request){
+    public ResponseEntity<LoginResponseDto> refresh(HttpServletRequest request,HttpServletResponse response
+                                                    ){
         // An absent cookie is an authentication failure here - refresh has nothing to work with.
         String refreshToken = readRefreshCookie(request)
                 .orElseThrow(() -> new AuthenticationServiceException("Refresh token not found in cookies"));
-        return ResponseEntity.ok(authService.refreshToken(refreshToken));
+        LoginResponseDto loginResponseDto=authService.refreshToken(refreshToken);
+        Cookie cookie=new Cookie(REFRESH_COOKIE, loginResponseDto.getRefreshToken());
+        cookie.setHttpOnly(true);
+        cookie.setPath(COOKIE_PATH);
+        response.addCookie(cookie);
+        return ResponseEntity.ok(loginResponseDto);
     }
 
     @PostMapping("/logout")

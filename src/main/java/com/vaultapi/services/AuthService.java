@@ -17,6 +17,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -60,8 +61,10 @@ public class AuthService {
         if(!userEntity.getId().equals(userId)){
             throw new AuthenticationServiceException("Refresh token does not match user");
         }
+
+        String rotatedRefreshToken = sessionService.generateRotatedRefreshToken(userEntity,refreshToken);
         String accessToken = jwtService.generateAccessToken(userEntity);
-        return new LoginResponseDto(userEntity.getId(), accessToken, refreshToken);
+        return new LoginResponseDto(userEntity.getId(), accessToken, rotatedRefreshToken);
     }
 
     @Transactional

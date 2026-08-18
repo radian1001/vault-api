@@ -3,6 +3,7 @@ package com.vaultapi.services;
 import com.vaultapi.entity.SessionEntity;
 import com.vaultapi.entity.UserEntity;
 import com.vaultapi.repo.SessionRepo;
+import com.vaultapi.repo.UserRepo;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -12,15 +13,14 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
-import java.util.Comparator;
-import java.util.HexFormat;
-import java.util.List;
+import java.util.*;
 
 @Service
 @Transactional
 @RequiredArgsConstructor
 public class SessionService {
     private final SessionRepo sessionRepo;
+    private final UserRepo userRepo;
     private final JwtService jwtService;
     private static final Integer SESSION_LIMIT = 4;
 
@@ -85,6 +85,19 @@ public class SessionService {
       sessionValidateEntity.setLastUsedAt(Instant.now());
       sessionRepo.save(sessionValidateEntity);
       return sessionValidateEntity;
+    }
+
+    @Transactional
+    public String generateRotatedRefreshToken(UserEntity user, String refreshToken) {
+        // Implementation for generating a rotated refresh token
+        String rotatedRefreshToken= jwtService.generateRefreshToken(user);
+        Optional<SessionEntity> existingSessionEntity=sessionRepo.findByTokenHash(hashToken(refreshToken));
+        if(existingSessionEntity.isPresent()){
+            existingSessionEntity.get().setTokenHash(hashToken(rotatedRefreshToken));
+            existingSessionEntity.get().setExpiresAt(jwtService.getRefreshTokenExpiryDate(rotatedRefreshToken));
+            sessionRepo.save(existingSessionEntity.get());
+        }
+       return  rotatedRefreshToken;
     }
 
 }

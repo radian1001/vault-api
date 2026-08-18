@@ -14,6 +14,11 @@ import java.time.Instant;
 import java.util.Date;
 import java.util.UUID;
 
+/**
+ * Mints and parses tokens, and knows nothing about the database. SessionService depends on
+ * this class, so a repository here would close the loop into a bean cycle Spring cannot
+ * resolve. Persisting a rotation is session state and lives in SessionService.
+ */
 @Service
 public class JwtService {
 
@@ -95,4 +100,6 @@ public class JwtService {
                 .getPayload();
         return claim.get("exp", Date.class).toInstant();
     }
+
+
 }
