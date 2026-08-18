@@ -2,10 +2,10 @@ package com.vaultapi.services;
 
 import com.vaultapi.entity.SessionEntity;
 import com.vaultapi.entity.UserEntity;
-import com.vaultapi.error.UserNotFoundException;
 import com.vaultapi.repo.SessionRepo;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
@@ -31,7 +31,7 @@ public class SessionService {
      * Safe here because the input is an already-signed, high-entropy JWT. There is no
      * low-entropy secret to brute-force, which is the only thing bcrypt's slowness buys.
      */
-    private String hashToken(String refreshToken) {
+    String hashToken(String refreshToken) {
         try {
             byte[] digest = MessageDigest.getInstance("SHA-256")
                     .digest(refreshToken.getBytes(StandardCharsets.UTF_8));
@@ -52,18 +52,36 @@ public class SessionService {
         }
     }
 
-    public void addRowLogin(UserEntity userEntity, String refreshToken) {
+    public void addRowLogin(UserEntity userEntity, String refreshToken, String deviceLabel) {
         checkSessionLimit(sessionRepo.findByUser(userEntity));
         SessionEntity sessionEntity=SessionEntity.builder()
                 .tokenHash(hashToken(refreshToken))
                 .user(userEntity)
+                .deviceLabel(truncateDeviceLabel(deviceLabel))
                 .expiresAt(jwtService.getRefreshTokenExpiryDate(refreshToken))
                 .build();
         sessionRepo.save(sessionEntity);
     }
 
+    /**
+     * Raw User-Agent. Attacker-controlled and unbounded, so it is capped to the column
+     * width - an oversized header must not turn a login into a 500.
+     */
+    private String truncateDeviceLabel(String deviceLabel) {
+        if (deviceLabel == null || deviceLabel.isBlank()) {
+            return "unknown";
+        }
+        return deviceLabel.length() <= 255 ? deviceLabel : deviceLabel.substring(0, 255);
+    }
+
     public SessionEntity userExists(String refreshToken) {
-      SessionEntity sessionValidateEntity=sessionRepo.findByTokenHash(hashToken(refreshToken)).orElseThrow(()->new UserNotFoundException("User not found with refresh token: " + refreshToken));
+      // BadCredentialsException, not UserNotFoundException: a revoked, rotated-away or
+      // forged token is an authentication failure (401), never a 404. The message carries
+      // no token - it is a live credential, and this string reaches both the response body
+      // and the error log. Revoked and forged now look identical to a caller, which is the
+      // point: the difference between them is not something an attacker gets to learn.
+      SessionEntity sessionValidateEntity=sessionRepo.findByTokenHash(hashToken(refreshToken))
+              .orElseThrow(() -> new BadCredentialsException("Invalid refresh token"));
       sessionValidateEntity.setLastUsedAt(Instant.now());
       sessionRepo.save(sessionValidateEntity);
       return sessionValidateEntity;

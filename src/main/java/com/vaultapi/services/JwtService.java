@@ -12,6 +12,7 @@ import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Date;
+import java.util.UUID;
 
 @Service
 public class JwtService {
@@ -32,6 +33,7 @@ public class JwtService {
 
     String generateAccessToken(UserEntity user){
         return Jwts.builder()
+                .id(UUID.randomUUID().toString())
                 .subject(user.getId().toString())
                 .claim("username", user.getUsername())
                 .claim("roles", user.getRoles())
@@ -44,6 +46,12 @@ public class JwtService {
 
     String generateRefreshToken(UserEntity user){
         return Jwts.builder()
+                // jti (RFC 7519), and load-bearing here rather than cosmetic: iat/exp are
+                // second-granularity, so two logins inside the same second would otherwise
+                // build identical claims and sign to a byte-identical token. Two devices
+                // would share one credential, and the session row keyed on its hash could
+                // not tell them apart - logging out one would log out the other.
+                .id((UUID.randomUUID().toString()))
                 .subject(user.getId().toString())
                 .claim("username", user.getUsername())
                 .claim("roles", user.getRoles())

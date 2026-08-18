@@ -1,5 +1,6 @@
 package com.vaultapi.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.vaultapi.dto.enums.Plans;
 import com.vaultapi.dto.enums.Roles;
 import lombok.AllArgsConstructor;
@@ -23,6 +24,7 @@ public class UserResponseDto {
     private Integer id;
     private String username;
     private String email;
+    @JsonIgnore
     private Set<Roles> roles;
     private Plans plans;
     private Instant planExpiration;

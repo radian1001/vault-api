@@ -26,6 +26,10 @@ public class SecurityConfig {
     SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception{
         httpSecurity.authorizeHttpRequests(
                 auth-> auth
+                        // Listed before /auth/** because the first match wins: these two
+                        // identify the caller by access token, the rest are anonymous entry
+                        // points (signup, login) or authenticate via the refresh cookie.
+                        .requestMatchers("/auth/logout-all", "/auth/sessions").authenticated()
                         .requestMatchers("/auth/**").permitAll()
                         .requestMatchers("/posts/**").authenticated()
                         // denyAll, not authenticated: an endpoint we forget to configure fails closed
